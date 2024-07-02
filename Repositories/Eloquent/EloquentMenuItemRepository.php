@@ -271,3 +271,4 @@ class EloquentMenuItemRepository extends EloquentCrudRepository implements MenuI
     return $menuitems;
   }
 }
+
