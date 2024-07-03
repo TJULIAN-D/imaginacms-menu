@@ -5,106 +5,31 @@ namespace Modules\Menu\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
-use Modules\Ihelpers\Http\Controllers\Api\BaseApiController;
-use Modules\Menu\Entities\Menu;
-use Modules\Menu\Http\Requests\CreateMenuItemRequest;
+use Modules\Core\Icrud\Controllers\BaseCrudController;
+
 // Base Api
 use Modules\Menu\Repositories\MenuItemRepository;
 use Modules\Menu\Services\MenuItemUriGenerator;
 use Modules\Menu\Transformers\MenuitemTransformer;
+use Modules\Menu\Entities\Menu;
+use Modules\Menu\Entities\Menuitem;
 
-class MenuItemApiController extends BaseApiController
+class MenuItemApiController extends BaseCrudController
 {
-    private $menuitem;
+    public $model;
+    public $modelRepository;
+    public $menu;
+    public $menuItemUriGenerator;
 
-    private $menu;
-
-    private $menuItemUriGenerator;
-
-    public function __construct(MenuItemRepository $menuitem, Menu $menu, MenuItemUriGenerator $menuItemUriGenerator)
+    public function __construct(MenuItemRepository $modelRepository, Menuitem $model,
+                                MenuItemUriGenerator $menuItemUriGenerator, Menu $menu)
     {
-        $this->menuitem = $menuitem;
+        $this->model = $model;
+        $this->modelRepository = $modelRepository;
         $this->menu = $menu;
         $this->menuItemUriGenerator = $menuItemUriGenerator;
     }
 
-    /**
-     * GET ITEMS
-     *
-     * @return mixed
-     */
-    public function index(Request $request)
-    {
-        try {
-            //Get Parameters from URL.
-            $params = $this->getParamsRequest($request);
-            //Request to Repository
-            $menuitems = $this->menuitem->getItemsBy($params);
-            //Response
-            $response = ['data' => MenuitemTransformer::collection($menuitems)];
-            //If request pagination add meta-page
-            $params->page ? $response['meta'] = ['page' => $this->pageTransformer($menuitems)] : false;
-        } catch (\Exception $e) {
-            $status = $this->getStatusError($e->getCode());
-            $response = ['errors' => $e->getMessage()];
-        }
-        //Return response
-        return response()->json($response ?? ['data' => 'Request successful'], $status ?? 200);
-    }
-
-    /**
-     * GET A ITEM
-     *
-     * @return mixed
-     */
-    public function show($criteria, Request $request)
-    {
-        try {
-            //Get Parameters from URL.
-            $params = $this->getParamsRequest($request);
-            //Request to Repository
-            $menuitem = $this->menuitem->getItem($criteria, $params);
-            //Break if no found item
-            if (! $menuitem) {
-                throw new \Exception('Item not found', 204);
-            }
-            //Response
-            $response = ['data' => new MenuitemTransformer($menuitem)];
-            //If request pagination add meta-page
-            $params->page ? $response['meta'] = ['page' => $this->pageTransformer($dataEntity)] : false;
-        } catch (\Exception $e) {
-            $status = $this->getStatusError($e->getCode());
-            $response = ['errors' => $e->getMessage()];
-        }
-        //Return response
-        return response()->json($response ?? ['data' => 'Request successful'], $status ?? 200);
-    }
-
-    /**
-     * CREATE A ITEM
-     *
-     * @return mixed
-     */
-    public function create(Request $request)
-    {
-        \DB::beginTransaction();
-        try {
-            $data = $request->input('attributes') ?? []; //Get data
-            //Validate Request
-            $this->validateRequestApi(new CreateMenuItemRequest($data));
-            //Create item
-            $product = $this->menuitem->create($data);
-            //Response
-            $response = ['data' => new MenuitemTransformer($product)];
-            \DB::commit(); //Commit to Data Base
-        } catch (\Exception $e) {
-            \DB::rollback(); //Rollback to Data Base
-            $status = $this->getStatusError($e->getCode());
-            $response = ['errors' => $e->getMessage()];
-        }
-        //Return response
-        return response()->json($response ?? ['data' => 'Request successful'], $status ?? 200);
-    }
 
     /**
      * UPDATE ITEM
@@ -132,39 +57,14 @@ class MenuItemApiController extends BaseApiController
 
             //Validate Parent ID
             if (! isset($data['parent_id'])) {
-                $data['parent_id'] = $this->menuitem->getRootForMenu($menu->id)->id;
+                $data['parent_id'] = $this->modelRepository->getRootForMenu($menu->id)->id;
             }
 
             //Request to Repository
-            $this->menuitem->updateBy($criteria, $data, $params);
+            $this->modelRepository->updateBy($criteria, $data, $params);
             //Response
             $response = ['data' => 'Item Updated'];
             \DB::commit(); //Commit to DataBase
-        } catch (\Exception $e) {
-            \DB::rollback(); //Rollback to Data Base
-            $status = $this->getStatusError($e->getCode());
-            $response = ['errors' => $e->getMessage()];
-        }
-        //Return response
-        return response()->json($response ?? ['data' => 'Request successful'], $status ?? 200);
-    }
-
-    /**
-     * DELETE A ITEM
-     *
-     * @return mixed
-     */
-    public function delete($criteria, Request $request)
-    {
-        \DB::beginTransaction();
-        try {
-            //Get params
-            $params = $this->getParamsRequest($request);
-            //call Method delete
-            $this->menuitem->deleteBy($criteria, $params);
-            //Response
-            $response = ['data' => 'Item deleted'];
-            \DB::commit(); //Commit to Data Base
         } catch (\Exception $e) {
             \DB::rollback(); //Rollback to Data Base
             $status = $this->getStatusError($e->getCode());
@@ -181,9 +81,9 @@ class MenuItemApiController extends BaseApiController
             $params = $this->getParamsRequest($request);
             $data = $request->input('attributes') ?? []; //Get data
             //Request to Repository
-            $dataEntity = $this->menuitem->getItemsBy($params);
+            $dataEntity = $this->modelRepository->getItemsBy($params);
             $crterians = $dataEntity->pluck('id');
-            $dataEntity = $this->menuitem->updateItems($crterians, $data);
+            $dataEntity = $this->modelRepository->updateItems($crterians, $data);
             //Response
             $response = ['data' => MenuitemTransformer::collection($dataEntity)];
             //If request pagination add meta-page
@@ -203,9 +103,9 @@ class MenuItemApiController extends BaseApiController
             //Get Parameters from URL.
             $params = $this->getParamsRequest($request);
             //Request to Repository
-            $dataEntity = $this->menuitem->getItemsBy($params);
+            $dataEntity = $this->modelRepository->getItemsBy($params);
             $crterians = $dataEntity->pluck('id');
-            $this->menuitem->deleteItems($crterians);
+            $this->modelRepository->deleteItems($crterians);
             //Response
             $response = ['data' => 'Items deleted'];
         } catch (\Exception $e) {
@@ -224,7 +124,7 @@ class MenuItemApiController extends BaseApiController
             $params = $this->getParamsRequest($request);
             $data = $request->input('attributes');
             //Update data
-            $newData = $this->menuitem->updateOrders($data);
+            $newData = $this->modelRepository->updateOrders($data);
             //Response
             $response = ['data' => 'updated items'];
             \DB::commit(); //Commit to Data Base

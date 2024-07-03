@@ -4,17 +4,32 @@ namespace Modules\Menu\Entities;
 
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Core\Support\Traits\AuditTrait;
+use Modules\Core\Icrud\Entities\CrudModel;
+
 use Modules\Isite\Entities\Module;
-use Modules\Isite\Traits\RevisionableTrait;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class Menu extends Model
+class Menu extends CrudModel
 {
-    use Translatable, BelongsToTenant, AuditTrait, RevisionableTrait;
+    use Translatable, BelongsToTenant;
 
+    protected $table = 'menu__menus';
+    public $transformer = 'Modules\Menu\Transformers\MenuTransformer';
     public $repository = 'Modules\Menu\Repositories\MenuRepository';
-
+    public $requestValidation = [
+        'create' => 'Modules\Menu\Http\Requests\CreateMenuRequest',
+        'update' => 'Modules\Menu\Http\Requests\UpdateMenuRequest',
+    ];
+    //Instance external/internal events to dispatch with extraData
+    public $dispatchesEventsWithBindings = [
+        //eg. ['path' => 'path/module/event', 'extraData' => [/*...optional*/]]
+        'created' => [],
+        'creating' => [],
+        'updated' => [],
+        'updating' => [],
+        'deleting' => [],
+        'deleted' => []
+    ];
     protected $fillable = [
         'name',
         'title',
@@ -24,12 +39,10 @@ class Menu extends Model
 
     public $translatedAttributes = ['title', 'status'];
 
-    protected $table = 'menu__menus';
 
     public function menuitems()
     {
         $modulesEnabled = implode('|', Module::where('enabled', 1)->get()->pluck('alias')->toArray() ?? []);
-
         $relation = $this->hasMany('Modules\Menu\Entities\Menuitem')->with('translations')->orderBy('position', 'asc');
         $relation->whereRaw("system_name REGEXP '$modulesEnabled'");
 

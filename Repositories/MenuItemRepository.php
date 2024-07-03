@@ -77,3 +77,4 @@ interface MenuItemRepository extends BaseCrudRepository
    */
   public function updateOrders($data);
 }
+

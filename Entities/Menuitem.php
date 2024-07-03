@@ -4,16 +4,31 @@ namespace Modules\Menu\Entities;
 
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Core\Support\Traits\AuditTrait;
-use Modules\Isite\Traits\RevisionableTrait;
+use Modules\Core\Icrud\Entities\CrudModel;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use TypiCMS\NestableTrait;
 
-class Menuitem extends Model
+class Menuitem extends CrudModel
 {
-    use Translatable, NestableTrait, BelongsToTenant, AuditTrait, RevisionableTrait;
+    use Translatable, NestableTrait, BelongsToTenant;
 
+    protected $table = 'menu__menuitems';
+    public $transformer = 'Modules\Menu\Transformers\MenuitemTransformer';
     public $repository = 'Modules\Menu\Repositories\MenuItemRepository';
+    public $requestValidation = [
+        'create' => 'Modules\Menu\Http\Requests\CreateMenuItemRequest',
+        'update' => 'Modules\Menu\Http\Requests\UpdateMenuItemRequest',
+    ];
+    //Instance external/internal events to dispatch with extraData
+    public $dispatchesEventsWithBindings = [
+        //eg. ['path' => 'path/module/event', 'extraData' => [/*...optional*/]]
+        'created' => [],
+        'creating' => [],
+        'updated' => [],
+        'updating' => [],
+        'deleting' => [],
+        'deleted' => []
+    ];
 
     public $translatedAttributes = ['title', 'uri', 'url', 'status', 'locale', 'description'];
 
@@ -30,8 +45,6 @@ class Menuitem extends Model
         'link_type',
         'class',
     ];
-
-    protected $table = 'menu__menuitems';
 
     /**
      * For nested collection

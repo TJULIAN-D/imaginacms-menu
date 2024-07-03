@@ -10,7 +10,6 @@ class CreateMenuRequest extends FormRequest
     {
         return [
             'name' => 'required',
-            'primary' => 'unique:menu__menus',
         ];
     }
 
@@ -23,7 +22,6 @@ class CreateMenuRequest extends FormRequest
     {
         return [
             'name.required' => trans('menu::validation.name is required'),
-            'primary.unique' => trans('menu::validation.only one primary menu'),
         ];
     }
 }

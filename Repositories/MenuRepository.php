@@ -8,3 +8,4 @@ interface MenuRepository extends BaseCrudRepository
 {
   public function allOnline();
 }
+
