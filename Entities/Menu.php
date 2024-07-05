@@ -4,34 +4,48 @@ namespace Modules\Menu\Entities;
 
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Core\Icrud\Entities\CrudModel;
+
 use Modules\Isite\Entities\Module;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
-use Modules\Isite\Traits\RevisionableTrait;
 
-use Modules\Core\Support\Traits\AuditTrait;
-
-class Menu extends Model
+class Menu extends CrudModel
 {
-  use Translatable, BelongsToTenant, AuditTrait, RevisionableTrait;
+    use Translatable, BelongsToTenant;
 
-  public $repository = 'Modules\Menu\Repositories\MenuRepository';
+    protected $table = 'menu__menus';
+    public $transformer = 'Modules\Menu\Transformers\MenuTransformer';
+    public $repository = 'Modules\Menu\Repositories\MenuRepository';
+    public $requestValidation = [
+        'create' => 'Modules\Menu\Http\Requests\CreateMenuRequest',
+        'update' => 'Modules\Menu\Http\Requests\UpdateMenuRequest',
+    ];
+    //Instance external/internal events to dispatch with extraData
+    public $dispatchesEventsWithBindings = [
+        //eg. ['path' => 'path/module/event', 'extraData' => [/*...optional*/]]
+        'created' => [],
+        'creating' => [],
+        'updated' => [],
+        'updating' => [],
+        'deleting' => [],
+        'deleted' => []
+    ];
+    protected $fillable = [
+        'name',
+        'title',
+        'status',
+        'primary',
+    ];
 
-  protected $fillable = [
-    'name',
-    'title',
-    'status',
-    'primary',
-  ];
-  public $translatedAttributes = ['title', 'status'];
-  protected $table = 'menu__menus';
+    public $translatedAttributes = ['title', 'status'];
 
-  public function menuitems()
-  {
-    $modulesEnabled = implode("|", Module::where("enabled", 1)->get()->pluck("alias")->toArray() ?? []);
 
-    $relation = $this->hasMany('Modules\Menu\Entities\Menuitem')->with("translations")->orderBy('position', 'asc');
-    $relation->whereRaw("system_name REGEXP '$modulesEnabled'");
+    public function menuitems()
+    {
+        $modulesEnabled = implode('|', Module::where('enabled', 1)->get()->pluck('alias')->toArray() ?? []);
+        $relation = $this->hasMany('Modules\Menu\Entities\Menuitem')->with('translations')->orderBy('position', 'asc');
+        $relation->whereRaw("system_name REGEXP '$modulesEnabled'");
 
-    return $relation;
-  }
+        return $relation;
+    }
 }
