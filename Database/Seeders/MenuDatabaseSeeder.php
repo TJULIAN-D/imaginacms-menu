@@ -15,6 +15,7 @@ class MenuDatabaseSeeder extends Seeder
         Model::unguard();
         //Seed cms pages
         $this->call(MenuModuleTableSeeder::class);
+        $this->call(DeleteCMSSidebarDatabaseSeeder::class);
         //$this->call(CMSSidebarDatabaseSeeder::class);
     }
 }
