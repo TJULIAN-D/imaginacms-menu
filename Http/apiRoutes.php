@@ -28,6 +28,14 @@ Route::prefix('imenu')->group(function (Router $router) {
             'update' => ['auth:api', 'auth-can:menu.menuitems.edit'],
             'delete' => ['auth:api', 'auth-can:menu.menuitems.destroy'],
             // 'restore' => []
+        ],
+        'customRoutes' => [
+            [
+                'method' => 'post',
+                'path' => '/ordener',
+                'uses' => 'updateOrderner',
+                'middleware' => ['auth:api']
+            ]
         ]
     ]);
 });
