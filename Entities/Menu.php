@@ -48,4 +48,11 @@ class Menu extends CrudModel
 
         return $relation;
     }
+
+    public function getCacheClearableData()
+    {
+      return [
+        'allResponseCache' => true
+      ];
+    }
 }
